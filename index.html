@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" href="./resources/ol.css">
+    <link rel="stylesheet" href="resources/fontawesome-all.min.css">
+    <link href="resources/photon-geocoder-autocomplete.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
+    <link rel="stylesheet" href="./resources/qgis2web.css">
+
+    <style>
+      html, body {
+        background-color: #ffffff;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      /* === LOADING SCREEN === */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #ffffff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+        transition: opacity 0.6s ease;
+      }
+      #loading-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #loading-gif {
+        width: 600px;
+        height: auto;
+      }
+
+      /* === HEADER === */
+      #header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+      }
+
+      #header img {
+        width: 100%;
+        height: auto;
+        display: block;
+        max-height: 18vh;
+      }
+
+      /* === MAP AREA === */
+      #map {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      /* === NORTH ARROW === */
+      #north-arrow {
+        position: absolute;
+        left: 50px;
+        width: 96px;
+        height: 96px;
+        background-image: url('resources/north_arrow.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        cursor: pointer;
+        z-index: 9999;
+        opacity: 0.9;
+        transition: transform 0.3s ease;
+      }
+      #north-arrow:hover {
+        transform: scale(1.1);
+      }
+
+      /* === UI COLORS === */
+      .ol-control > * {
+        background-color: #f8f8f8!important;
+        color: #444!important;
+        border-radius: 0px;
+      }
+      .ol-attribution a, .gcd-gl-input::placeholder, .search-layer-input-search::placeholder {
+        color: #444!important;
+      }
+      .search-layer-input-search {
+        background-color: #f8f8f8!important;
+      }
+      .ol-control > *:focus, .ol-control > *:hover {
+        background-color: rgba(248, 248, 248, 0.7)!important;
+      }
+      .ol-control {
+        background-color: rgba(255,255,255,.4) !important;
+        padding: 2px !important;
+      }
+
+      /* === RESPONSIF === */
+      @media (max-width: 768px) {
+        #header img {
+          max-height: 15vh;
+        }
+        #north-arrow {
+          width: 70px;
+          height: 70px;
+          left: 50px;
+        }
+      }
+    </style>
+
+    <title>Indonesia Geospasial - Potensi Mineral Logam</title>
+  </head>
+
+  <body>
+    <!-- === LOADING SCREEN === -->
+    <div id="loading-screen">
+      <img id="loading-gif" src="resources/loading.gif" alt="Loading...">
+    </div>
+
+    <!-- === HEADER GRAFIS === -->
+    <div id="header">
+      <img src="images/header_peta.png" alt="Header Geospasial">
+    </div>
+
+    <!-- === MAP AREA === -->
+    <div id="map">
+      <div id="popup" class="ol-popup">
+        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <div id="popup-content"></div>
+      </div>
+    </div>
+
+    <!-- === NORTH ARROW ELEMENT === -->
+    <div id="north-arrow" title="Kembalikan tampilan ke arah utara"></div>
+
+    <!-- === NORTH ARROW SCRIPT + HEADER HEIGHT SYNC === -->
+    <script>
+      function adjustMapTop() {
+        const header = document.getElementById('header');
+        const map = document.getElementById('map');
+        const northArrow = document.getElementById('north-arrow');
+        if (header && map) {
+          const h = header.offsetHeight;
+          map.style.top = h + 'px';
+          if (northArrow) {
+            northArrow.style.top = (h + 1) + 'px';
+          }
+        }
+      }
+
+      window.addEventListener('load', adjustMapTop);
+      window.addEventListener('resize', adjustMapTop);
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const northArrow = document.getElementById('north-arrow');
+        if (!northArrow) return;
+
+        northArrow.addEventListener('click', function() {
+          if (typeof map !== 'undefined' && map.getView) {
+            map.getView().animate({ rotation: 0, duration: 600 });
+          }
+        });
+
+        if (typeof map !== 'undefined' && map.getView) {
+          map.getView().on('change:rotation', function() {
+            const rotation = map.getView().getRotation();
+            northArrow.style.transform = 'rotate(' + (-rotation) + 'rad)';
+          });
+        }
+      });
+
+      // === LOADING SCREEN MINIMAL 5 DETIK ===
+      const startTime = Date.now();
+      window.addEventListener("load", () => {
+        const elapsed = Date.now() - startTime;
+        const remaining = 5000 - elapsed;
+        const loader = document.getElementById("loading-screen");
+
+        setTimeout(() => {
+          loader.classList.add("fade-out");
+          setTimeout(() => loader.style.display = "none", 600);
+        }, remaining > 0 ? remaining : 0);
+      });
+    </script>
+
+    <!-- === JS FILES === -->
+    <script src="resources/qgis2web_expressions.js"></script>
+    <script src="./resources/functions.js"></script>
+    <script src="./resources/ol.js"></script>
+    <script src="./resources/ol-layerswitcher.js"></script>
+    <script src="resources/photon-geocoder-autocomplete.min.js"></script>
+
+    <!-- === LAYERS === -->
+    <script src="layers/Xenotim_2.js"></script>
+    <script src="layers/TitanPlaser_3.js"></script>
+    <script src="layers/TitanLaterit_4.js"></script>
+    <script src="layers/Timbal_5.js"></script>
+    <script src="layers/Timah_6.js"></script>
+    <script src="layers/Tembaga_7.js"></script>
+    <script src="layers/Seng_8.js"></script>
+    <script src="layers/Platina_9.js"></script>
+    <script src="layers/Perak_10.js"></script>
+    <script src="layers/PasirBesi_11.js"></script>
+    <script src="layers/Nikel_12.js"></script>
+    <script src="layers/Monasit_13.js"></script>
+    <script src="layers/Molibdenum_14.js"></script>
+    <script src="layers/Mangan_15.js"></script>
+    <script src="layers/KromitPlaser_16.js"></script>
+    <script src="layers/Kromit_17.js"></script>
+    <script src="layers/Kobal_18.js"></script>
+    <script src="layers/EmasPrimer_19.js"></script>
+    <script src="layers/BesiSedimen_20.js"></script>
+    <script src="layers/BesiPrimer_21.js"></script>
+    <script src="layers/BesiLaterit_22.js"></script>
+    <script src="layers/AirRaksa_23.js"></script>
+
+    <!-- === STYLE FILES === -->
+    <script src="styles/Xenotim_2_style.js"></script>
+    <script src="styles/TitanPlaser_3_style.js"></script>
+    <script src="styles/TitanLaterit_4_style.js"></script>
+    <script src="styles/Timbal_5_style.js"></script>
+    <script src="styles/Timah_6_style.js"></script>
+    <script src="styles/Tembaga_7_style.js"></script>
+    <script src="styles/Seng_8_style.js"></script>
+    <script src="styles/Platina_9_style.js"></script>
+    <script src="styles/Perak_10_style.js"></script>
+    <script src="styles/PasirBesi_11_style.js"></script>
+    <script src="styles/Nikel_12_style.js"></script>
+    <script src="styles/Monasit_13_style.js"></script>
+    <script src="styles/Molibdenum_14_style.js"></script>
+    <script src="styles/Mangan_15_style.js"></script>
+    <script src="styles/KromitPlaser_16_style.js"></script>
+    <script src="styles/Kromit_17_style.js"></script>
+    <script src="styles/Kobal_18_style.js"></script>
+    <script src="styles/EmasPrimer_19_style.js"></script>
+    <script src="styles/BesiSedimen_20_style.js"></script>
+    <script src="styles/BesiPrimer_21_style.js"></script>
+    <script src="styles/BesiLaterit_22_style.js"></script>
+    <script src="styles/AirRaksa_23_style.js"></script>
+
+    <script src="./layers/layers.js" type="text/javascript"></script>
+    <script src="./resources/Autolinker.min.js"></script>
+    <script src="./resources/qgis2web.js"></script>
+  </body>
+</html>
